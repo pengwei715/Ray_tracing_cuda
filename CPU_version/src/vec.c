@@ -40,10 +40,15 @@ double rand_double(uint64_t *seed){
   return (double) (*seed) /(double) m;
 }
 
-Vec vec_sample_unit() {
+Vec vec_sample_unit(int i) {
   Vec res;
-  double pho = rand_double(uint64_t(srand(time(0))) * 2 * M_PI;
-  double cos_theta = rand_double(uint64_t(srand(time(0))) * 2 - 1;
+  //  uint64_t seed = (uint64_t)(i * 4238811);
+  double rd1 = (double)rand() / (double)RAND_MAX;
+  double rd2 = (double)rand() / (double)RAND_MAX;
+  //double pho = rand_double(&seed) * 2 * M_PI;			   
+  //double cos_theta = rand_double(&seed) * 2 - 1;
+  double pho = rd1 * 2 * M_PI;
+  double cos_theta = rd2 * 2 - 1;
   double sin_theta = sqrt( 1 - cos_theta * cos_theta);
   res.x = sin_theta * cos(pho);
   res.y = sin_theta * sin(pho);

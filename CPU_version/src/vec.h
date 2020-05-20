@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <stdint.h>
 
 typedef struct {
   double x;
@@ -11,12 +12,12 @@ typedef struct {
   double z;
 } Vec;
 
-double rand_double(uint64_t seed);
+double rand_double(uint64_t *seed);
 Vec vec_add(Vec v1, Vec v2);
 Vec vec_revert(Vec v);
 Vec vec_sub(Vec v1, Vec v2);
 Vec vec_scale(Vec v, double i);
-Vec vec_sample_unit();
+Vec vec_sample_unit(int i);
 double vec_dot_product(Vec v1, Vec v2);
 double vec_norm(Vec v);
 

@@ -1,4 +1,4 @@
-objects = ray.o vec.o d_mat_types.o
+objects = ray.o
 
 all: $(objects)
 	nvcc  $(objects) -o ray
@@ -8,7 +8,7 @@ all: $(objects)
 #     g++ -O3 -I. $^ -c -o $@
 
 %.o: %.cu
-	nvcc -x cu -O3 --resource-usage -I. -dc  $^ -c -o $@
+	nvcc -x cu -O3 --resource-usage $^ -c -o $@
 
 
 

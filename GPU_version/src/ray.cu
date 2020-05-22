@@ -126,11 +126,11 @@ __global__ void ray_trace_kernel(float* d_window, int width, int ray_num) {
   w_max = 10;
   R = 6.0;
   
-  for (int i = 0; i < ray_chunck; i+=blockDim.x){
+  for (int i = 0; i < ray_chunck; i+=blockDim.x*gridDim.x){
     Vec V, W;
     uint64_t seed = tx;
     while(1){
-      seed *= 4238811 ;
+      seed += ray_num;
       V = vec_sample_unit(seed);
       if (V.y == 0) continue;
       W = vec_scale(V, (w_y/V.y));
@@ -154,46 +154,70 @@ __global__ void ray_trace_kernel(float* d_window, int width, int ray_num) {
 // get the args
 // **********************************************
 
-void get_input(int argc, char *argv[], int* num_rays, int* grid_len){
-  *num_rays = 1000000000;
-  *grid_len = 1000;
+void get_input(int argc, char *argv[], int* num_rays, int* len, int *grid_dim, int *block_dim){
+  *num_rays = 1000000;
+  *len = 1000;
+  *grid_dim = -1;
+  *block_dim = 256;
   int opt;
-  while((opt = getopt(argc, argv, "r:g:")) != -1) {
+  while((opt = getopt(argc, argv, "r:l:g:b:")) != -1) {
     switch (opt) {
     case 'r':
       *num_rays = atoi(optarg);
       break;
+    case 'l':
+      *len = atoi(optarg);
+      break;
     case 'g':
-      *grid_len = atoi(optarg);
+      *grid_dim = atoi(optarg);
+      break;
+    case 'b':
+      *block_dim = atoi(optarg);
       break;
     default:break;
     }
+  }
+  if (*grid_dim == -1) {
+    *grid_dim = (*num_rays + *block_dim-1) / *block_dim;
   }
 }
 
 
 int main(int argc, char* argv[]) {
   int num_rays;
-  int grid_len;
-  get_input(argc, argv, &num_rays, &grid_len);
+  int len;
+  int grid_dim;
+  int block_dim;
+  get_input(argc, argv, &num_rays, &len, &grid_dim, &block_dim);
   
-  size_t size = grid_len * grid_len * sizeof(float);
+  size_t size = len * len * sizeof(float);
 
   float* d_window;
-
   cudaMalloc((void **) &d_window, size);
   cudaMemset((void *) d_window, 0.0, size);
+  
+  cudaEvent_t start ,end;
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+  
+  cudaEventRecord(start, 0);
+  ray_trace_kernel<<<grid_dim,block_dim>>>(d_window, len, num_rays);
+  cudaEventRecord(end, 0);
 
-  ray_trace_kernel<<<4096,256>>>(d_window, grid_len, num_rays);
+  float time;
+  cudaEventSynchronize(end);
+  cudaEventElapsedTime(&time, start, end);
+  time = time / 1000;
+  printf("ray_num\tgrid_dim\tblock_dim\ttime\n");
+  printf("%d\t%d\t%d\t%f\n", num_rays, grid_dim, block_dim, time);
 
   float* window = (float*) malloc(size);
   cudaMemcpy(window, d_window, size, cudaMemcpyDeviceToHost);
 
-
   char filename[] = "ball.dat";
   FILE *f = fopen(filename, "wb");
   if (f != NULL) {
-    fwrite(window, sizeof(float), grid_len * grid_len, f);
+    fwrite(window, sizeof(float), len * len, f);
     fclose(f);
   } else {
     fprintf(stderr, "Error opening %s: ", filename);
@@ -202,6 +226,7 @@ int main(int argc, char* argv[]) {
     cuchk(cudaFree(d_window));
     exit(EXIT_FAILURE);
   }
+
   free(window);
   cuchk(cudaFree(d_window));
   return 0;

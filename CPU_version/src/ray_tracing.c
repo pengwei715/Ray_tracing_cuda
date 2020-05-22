@@ -12,7 +12,7 @@
 #endif
 
 void get_input(int argc, char *argv[], long* num_rays, size_t* grid_len){
-  *num_rays = 5e6;
+  *num_rays = 10000000;
   *grid_len = 1000;
   int opt;
   while((opt = getopt(argc, argv, "r:g:")) != -1) {
@@ -29,6 +29,7 @@ void get_input(int argc, char *argv[], long* num_rays, size_t* grid_len){
 }
 
 int main(int argc, char* argv[]) {
+  timespec_t start = tick();
   int threads = 1;
 #ifdef _OPENMP
 #pragma omp parallel
@@ -59,13 +60,11 @@ int main(int argc, char* argv[]) {
   double C_norm = vec_norm(C);
   double w_max = 10;
 
-  timespec_t start = tick();
 #pragma omp parallel
   for (int i=0 ; i<num_rays; ++i) {
     Vec V, W;
     while(1){
       V = vec_sample_unit(i);
-      //      printf("%lf",V.y);
       if (V.y == 0) continue;
       W = vec_scale(V, (w_y/V.y));
       double temp = vec_dot_product(V, C);
@@ -83,11 +82,10 @@ int main(int argc, char* argv[]) {
     int z = floor((W.z + w_max) /(2 * w_max) * (grid_len - 1));
 #pragma omp critical
     window.at[x][z] += b;
-    printf("\r \e[?25l %l", i);
   }
-  printf("\e[?25h");
   timespec_t end = tick();
   long dur = tick_diff(start, end);
+  printf("%d\n", dur/1000000);
   
 
   char filename[] = "ball.dat";

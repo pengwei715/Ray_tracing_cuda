@@ -1,4 +1,4 @@
-# Report for homework 3
+# Ray tracing on CPU VS GPU
 
 ## CPU code for ray tracing
 
